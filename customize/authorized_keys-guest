@@ -1,0 +1,10 @@
+# Add ssh keys with paired programming access to the machine, examples below
+#
+# The below line gives view only access to the wemux session started by dev
+#  If there is no wemux session, this will just boot the user
+#command="wemux mirror" ssh-rsa <replace this (including brackets) with the public key> John
+#
+# The below line gives access to your current wemux session (shared cursor)
+#  (will also boot the user if there is no active wemux session started by dev)
+#  Warning, this user can execute commands as dev
+#command="wemux pair" ssh-rsa <replace this (including brackets) with the public key> John2

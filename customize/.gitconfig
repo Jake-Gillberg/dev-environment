@@ -1,0 +1,4 @@
+#Example git config, uncomment and complete following lines
+#[user]
+#	name = Jane Doe
+#	email = jane.doe@gmail.com

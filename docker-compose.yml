@@ -1,0 +1,19 @@
+version: '3'
+services:
+    
+    dev:
+        container_name: dev
+        build: .
+        image: dev-image
+        # Preserve dev home and ssh keys
+        volumes:
+         - devhome:/home/dev
+         - authorized_keys:/root/ssh/authorized_keys
+        tty: true
+        # Serve ssh on host port 64583
+        ports:
+         - "64583:22"
+
+volumes:
+    devhome:
+    authorized_keys:
