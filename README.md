@@ -1,6 +1,8 @@
 # dev-environment
 An Ethereum development environment built in Docker that supports remote login and paired programming. The development environment I use on a daily basis.
 
+Feel free to ping me with issues or requests!
+
 ## Features
 * [truffle](http://truffleframework.com/docs/) for solidity development
 * [testrpc](https://github.com/ethereumjs/testrpc) for local dapp testing
