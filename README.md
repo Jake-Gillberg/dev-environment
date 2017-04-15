@@ -19,9 +19,9 @@ An Ethereum development environment built in Docker that supports remote login a
 5. Login to your machine
     - As root: `docker exec -it dev '/bin/bash'`
     - As the development user: `docker exec --user dev -it dev '/bin/bash'`
-    - Using SSH `ssh dev@localhost -i <private key file>` (must have added a public key to `customize/authorized_keys-dev`, or have logged in as root and modified `/etc/ssh/authorized_keys/dev`)
+    - Using SSH `ssh dev@localhost -p 64583 -i <private key file>` (must have added a public key to `customize/authorized_keys-dev`, or have logged in as root and modified `/etc/ssh/authorized_keys/dev`)
 6. Start a paired programming session
     1. While logged in as dev `wemux start`
-    2. Add a ssh-key with `command="wemux mirror"` or `command="wemux pair"` to `/etc/ssh/authorized_keys/dev` (see examples in file) and have the user `ssh guest@localhost -i <private key file>`
+    2. Add a ssh-key with `command="wemux mirror"` or `command="wemux pair"` to `/etc/ssh/authorized_keys/dev` (see examples in file) and have the user `ssh guest@localhost -p 64583 -i <private key file>`
 
 If you only want the image, it is also [hosted on dockerhub](https://hub.docker.com/r/jakegillberg/dev-environment/). `docker pull jakegillberg/dev-environment`
