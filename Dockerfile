@@ -6,7 +6,6 @@
 # (When updating from jessie, if possible, don't use backports)
 FROM debian:jessie
 ARG DISTRO=jessie
-ARG dpkgArch="$(dpkg --print-architecture)"
 ARG GOSU_VERSION=1.10
 ARG NODE_VERSION=7.x
 
@@ -24,7 +23,7 @@ RUN adduser --gecos "" --shell /bin/bash --disabled-password dev
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
-	  apt-utils `
+      apt-utils `
   && rm -rf /var/lib/apt/lists/*
 
 #Show apt how to install backports (needed for gosu in jessie)
@@ -38,13 +37,13 @@ RUN `
   && apt-get install -y --no-install-recommends `
     ca-certificates `
     curl `
-	git `
-	man `
-	tmux `
+    git `
+    man `
+    tmux `
   && apt-get -t jessie-backports install -y --no-install-recommends `
     gosu `
   && rm -rf /var/lib/apt/lists/*
-  
+
 #Configure git
 COPY ./customize/.gitconfig /home/dev/.gitconfig
 RUN `
@@ -78,28 +77,30 @@ RUN `
     mkdir -p /home/dev/.vim/autoload /home/dev/.vim/bundle `
     && curl -Sso /home/dev/.vim/autoload/pathogen.vim https://raw.githubusercontent.com/tpope/vim-pathogen/master/autoload/pathogen.vim `
     #Configure pathogen
-	#Delete following lines if your vimrc enables pathogen
-	  && echo '"Turn on plugin manager' >> /home/dev/.vimrc `
-	  && echo 'execute pathogen#infect()' >> /home/dev/.vimrc `
+    #Delete following lines if your vimrc enables pathogen
+      && echo '"Turn on plugin manager' >> /home/dev/.vimrc `
+      && echo 'execute pathogen#infect()' >> /home/dev/.vimrc `
   # Install syntastic - syntax checks plugin
     && git clone --depth=1 https://github.com/vim-syntastic/syntastic.git /home/dev/.vim/bundle/syntastic `
-	#Configure syntastic
-	#Delete following lines if your vimrc configures syntastic
-	  && echo '' >> /home/dev/.vimrc `
-	  && echo '"Recommended settings for syntastic (https://github.com/vim-syntastic/syntastic)' >> /home/dev/.vimrc `
-	  && echo 'set statusline+=%#warningmsg#' >> /home/dev/.vimrc `
-	  && echo 'set statusline+=%{SyntasticStatuslineFlag()}' >> /home/dev/.vimrc `
-	  && echo 'set statusline+=%*' >> /home/dev/.vimrc `
-	  && echo '' >> /home/dev/.vimrc `
-	  && echo 'let g:syntastic_always_populate_loc_list = 1' >> /home/dev/.vimrc `
-	  && echo 'let g:syntastic_auto_loc_list = 1' >> /home/dev/.vimrc `
-	  && echo 'let g:syntastic_check_on_open = 1' >> /home/dev/.vimrc `
-	  && echo 'let g:syntastic_check_on_wq = 0' >> /home/dev/.vimrc `
+    #Configure syntastic
+    #Delete following lines if your vimrc configures syntastic
+      && echo '' >> /home/dev/.vimrc `
+      && echo '"Recommended settings for syntastic (https://github.com/vim-syntastic/syntastic)' >> /home/dev/.vimrc `
+      && echo 'set statusline+=%#warningmsg#' >> /home/dev/.vimrc `
+      && echo 'set statusline+=%{SyntasticStatuslineFlag()}' >> /home/dev/.vimrc `
+      && echo 'set statusline+=%*' >> /home/dev/.vimrc `
+      && echo '' >> /home/dev/.vimrc `
+      && echo 'let g:syntastic_always_populate_loc_list = 1' >> /home/dev/.vimrc `
+      && echo 'let g:syntastic_auto_loc_list = 1' >> /home/dev/.vimrc `
+      && echo 'let g:syntastic_check_on_open = 1' >> /home/dev/.vimrc `
+      && echo 'let g:syntastic_check_on_wq = 0' >> /home/dev/.vimrc `
   # Install sensible - mostly uncontentious defaults
     && git clone --depth=1 https://github.com/tpope/vim-sensible.git /home/dev/.vim/bundle/sensible `
+  #Install syntax highlighting for solidity `
+    && git clone --depth=1 https://github.com/tomlion/vim-solidity.git /home/dev/.vim/bundle/vim-solidity `
   # apply customized vimrc
     && echo '' >> /home/dev/.vimrc `
-	&& cat /home/dev/.vimrc.bak >> /home/dev/.vimrc
+    && cat /home/dev/.vimrc.bak >> /home/dev/.vimrc
 USER root
 
 ####### REMOTE ACCESS #######
@@ -107,9 +108,9 @@ USER root
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
-	openssh-server `
+    openssh-server `
   && rm -rf /var/lib/apt/lists/*
-  
+
 #Configure sshd
 RUN cp /etc/ssh/sshd_config /etc/ssh/sshd_config.factorydefault
 COPY ./sshd_config /etc/ssh/sshd_config
@@ -121,7 +122,7 @@ EXPOSE 22
 RUN echo '/etc/init.d/ssh start' >> /entrypoint.sh
 
 ####### PAIRED PROGRAMING #######
-#  and a user for paired programming (guest)
+# add a user for paired programming (guest)
 RUN `
   adduser --gecos "" --shell /bin/bash --disabled-password guest
 
@@ -145,34 +146,27 @@ RUN `
     apt-transport-https `
   && rm -rf /var/lib/apt/lists/*
 RUN `
-  curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key `
+  curl -sS https://deb.nodesource.com/gpgkey/nodesource.gpg.key `
     | apt-key add - `
   && echo "deb https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
     > /etc/apt/sources.list.d/nodesource.list `
   && echo "deb-src https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
-    >> /etc/apt/sources.list.d/nodesource.list 
+    >> /etc/apt/sources.list.d/nodesource.list
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
     g++ `
     nodejs `
-	make `
-	python `
+    make `
+    python `
   && rm -rf /var/lib/apt/lists/*
-  
-#Create an unprivileged system user for node applications
-# (might need to fix $PATH later to include /home/node/npm/bin)
-RUN `
-  addgroup --system app `
-  && adduser --system --ingroup app node
-ENV PATH="${PATH}:/home/node/npm/bin"
 
 #Configuare npm
 RUN `
-  npm config set user node -g `
-  && npm config set prefix /home/node/npm -g
+  npm config set user dev -g `
+  && npm config set prefix /home/dev/npm -g
 
-USER node
+USER dev
 # Update npm before using it
 RUN `
   npm install --no-optional -g `
@@ -183,9 +177,31 @@ RUN `
 RUN `
   npm install -g --no-optional `
     git://github.com/ethereumjs/testrpc `
-	git://github.com/trufflesuite/truffle `
+    git://github.com/trufflesuite/truffle `
   && npm cache clean
 USER root
+
+#Install the same solc that comes with truffle for syntax checking via syntastic.
+#  (solcjs command line options not compatible with solc)
+WORKDIR /tmp
+RUN `
+  rm -rf /tmp/* `
+  && export SOLC_VERSION="$(/home/dev/npm/lib/node_modules/truffle/node_modules/solc/solcjs --version | sed 's/+.*//')" `
+  && curl -LSso "./solidity_${SOLC_VERSION}.tar.gz" "https://github.com/ethereum/solidity/releases/download/v${SOLC_VERSION}/solidity_${SOLC_VERSION}.tar.gz" `
+  && tar -zxf "./solidity_${SOLC_VERSION}.tar.gz" `
+  && apt-get update `
+  && apt-get install -y --no-install-recommends `
+    cmake `
+    libboost-all-dev `
+  && rm -rf /var/lib/apt/lists/* `
+  && cmake ./solidity_${SOLC_VERSION} `
+  && make `
+  && make install `
+  && apt-get purge -y `
+      cmake `
+  && apt-get autoremove `
+  && rm -rf /tmp/*
+WORKDIR /
 
 ####### JAVA DEV #######
 RUN `
@@ -193,7 +209,9 @@ RUN `
   && apt-get install -y --no-install-recommends `
     openjdk-7-jdk `
   && rm -rf /var/lib/apt/lists/*
-  
+
 ####### STARTUP #######
-RUN echo 'exec gosu dev /bin/bash' >> /entrypoint.sh
+RUN `
+  rm -rf /tmp/* `
+  && echo 'exec gosu dev /bin/bash' >> /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
