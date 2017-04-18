@@ -165,6 +165,7 @@ RUN `
 RUN `
   npm config set user dev -g `
   && npm config set prefix /home/dev/npm -g
+ENV PATH="${PATH}:/home/dev/npm/bin"
 
 USER dev
 # Update npm before using it
@@ -199,7 +200,7 @@ RUN `
   && make install `
   && apt-get purge -y `
       cmake `
-  && apt-get autoremove `
+  && apt-get autoremove -y `
   && rm -rf /tmp/*
 WORKDIR /
 
