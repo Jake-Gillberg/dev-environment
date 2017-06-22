@@ -35,6 +35,7 @@ RUN `
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
+    apt-transport-https `
     ca-certificates `
     curl `
     git `
@@ -204,12 +205,41 @@ RUN `
   && rm -rf /tmp/*
 WORKDIR /
 
-####### JAVA DEV #######
+####### RCHAIN DEV #######
+# Install rholang
+
+# show apt how to install sbt
+RUN `
+  echo "deb https://dl.bintray.com/sbt/debian /" `
+    > /etc/apt/sources.list.d/sbt.list `
+  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 `
+    --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
+# Java is a depndency of the dependencies
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
     openjdk-7-jdk `
   && rm -rf /var/lib/apt/lists/*
+  
+# Install rholang dependencies
+RUN `
+  apt-get update `
+  && apt-get install -y --no-install-recommends `
+    bnfc `
+    cup `
+	jlex `
+	sbt `
+  && rm -rf /var/lib/apt/lists/*
+
+# Get and build rholang
+RUN `
+  git clone --depth=1 git://github.com/rchain/Rholang.git
+WORKDIR /Rholang
+RUN `
+  sed -i '/cup/ s]$] from "file:///usr/share/java/cup.jar"]' build.sbt `
+  && sed -i '/JLex/ s]$] from "file:///usr/share/java/JLex.jar"]' build.sbt `
+  && sbt bnfc:generate
+WORKDIR /
 
 ####### STARTUP #######
 RUN `
