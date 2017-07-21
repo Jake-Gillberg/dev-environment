@@ -8,7 +8,7 @@ services:
         # Preserve dev home and ssh keys
         volumes:
          - devhome:/home/dev
-         - authorized_keys:/root/ssh/authorized_keys
+         - authorized_keys:/etc/ssh/authorized_keys
         tty: true
         # Serve ssh on host port 64583
         ports:

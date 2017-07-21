@@ -3,11 +3,9 @@
 # (must be first line of dockerfile, which is why this comment is second)
 
 ####### VERSIONS #######
-# (When updating from jessie, if possible, don't use backports)
-FROM debian:jessie
-ARG DISTRO=jessie
-ARG GOSU_VERSION=1.10
-ARG NODE_VERSION=7.x
+FROM debian:stretch
+ARG DISTRO=stretch
+ARG NODE_VERSION=8.x
 
 LABEL maintainer "jake.gillberg@gmail.com"
 
@@ -26,11 +24,6 @@ RUN `
       apt-utils `
   && rm -rf /var/lib/apt/lists/*
 
-#Show apt how to install backports (needed for gosu in jessie)
-RUN `
-  echo "deb http://ftp.debian.org/debian jessie-backports main" `
-    > /etc/apt/sources.list.d/backports.list
-
 #Install development tools and gosu for docker privilege fix
 RUN `
   apt-get update `
@@ -39,11 +32,18 @@ RUN `
     ca-certificates `
     curl `
     git `
+	gosu `
+	locales `
     man `
     tmux `
-  && apt-get -t jessie-backports install -y --no-install-recommends `
-    gosu `
+	unzip `
   && rm -rf /var/lib/apt/lists/*
+  
+#Set the locale
+RUN `
+  echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen `
+  && dpkg-reconfigure locales `
+  && echo ': "${LANG:=en_US.utf8}"; export LANG' >> /etc/profile
 
 #Configure git
 COPY ./customize/.gitconfig /home/dev/.gitconfig
@@ -144,7 +144,7 @@ RUN chmod 0644 /usr/local/etc/wemux.conf
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
-    apt-transport-https `
+	gnupg2 `
   && rm -rf /var/lib/apt/lists/*
 RUN `
   curl -sS https://deb.nodesource.com/gpgkey/nodesource.gpg.key `
@@ -165,22 +165,25 @@ RUN `
 #Configuare npm
 RUN `
   npm config set user dev -g `
-  && npm config set prefix /home/dev/npm -g
-ENV PATH="${PATH}:/home/dev/npm/bin"
+  && npm config set prefix /home/dev/npm -g `
+  && echo '' >> /home/dev/.profile `
+  && echo 'if [ -d "$HOME/npm/bin" ] ; then' >> /home/dev/.profile `
+  && echo '    PATH="$HOME/npm/bin:$PATH"' >> /home/dev/.profile `
+  && echo 'fi' >> /home/dev/.profile
 
 USER dev
 # Update npm before using it
 RUN `
   npm install --no-optional -g `
     npm@latest `
-  && npm cache clean
+  && npm cache clean --force
 
 # Install testrpc and truffle
 RUN `
   npm install -g --no-optional `
     git://github.com/ethereumjs/testrpc `
     git://github.com/trufflesuite/truffle `
-  && npm cache clean
+  && npm cache clean --force
 USER root
 
 #Install the same solc that comes with truffle for syntax checking via syntastic.
@@ -205,41 +208,12 @@ RUN `
   && rm -rf /tmp/*
 WORKDIR /
 
-####### RCHAIN DEV #######
-# Install rholang
-
-# show apt how to install sbt
-RUN `
-  echo "deb https://dl.bintray.com/sbt/debian /" `
-    > /etc/apt/sources.list.d/sbt.list `
-  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 `
-    --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-# Java is a depndency of the dependencies
+####### JAVA #######
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
-    openjdk-7-jdk `
+    openjdk-8-jdk `
   && rm -rf /var/lib/apt/lists/*
-  
-# Install rholang dependencies
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    bnfc `
-    cup `
-	jlex `
-	sbt `
-  && rm -rf /var/lib/apt/lists/*
-
-# Get and build rholang
-RUN `
-  git clone --depth=1 git://github.com/rchain/Rholang.git
-WORKDIR /Rholang
-RUN `
-  sed -i '/cup/ s]$] from "file:///usr/share/java/cup.jar"]' build.sbt `
-  && sed -i '/JLex/ s]$] from "file:///usr/share/java/JLex.jar"]' build.sbt `
-  && sbt bnfc:generate
-WORKDIR /
 
 ####### STARTUP #######
 RUN `
