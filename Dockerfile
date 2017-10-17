@@ -51,13 +51,6 @@ RUN `
   chown dev:dev /home/dev/.gitconfig `
   && chmod 0644 /home/dev/.gitconfig
 
-#Configure LS colors
-RUN dircolors -p > /home/dev/.dircolors.bak
-COPY ./.dircolors /home/dev/.dircolors
-RUN `
-  chown dev:dev /home/dev/.dircolors* `
-  && chmod 0644 /home/dev/.dircolors
-
 #Start the entrypoint script
 RUN echo '#!/bin/bash' > entrypoint.sh `
   && chmod 0700 /entrypoint.sh
@@ -113,14 +106,18 @@ RUN `
   && rm -rf /var/lib/apt/lists/*
 
 #Configure sshd
-RUN cp /etc/ssh/sshd_config /etc/ssh/sshd_config.factorydefault
-COPY ./sshd_config /etc/ssh/sshd_config
+RUN `
+  rm -rf /etc/ssh/ssh_host* `
+  && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.factorydefault
+COPY ./config/sshd_config /etc/ssh/sshd_config
 COPY ./customize/authorized_keys-dev /etc/ssh/authorized_keys/dev
 RUN chmod 0644 /etc/ssh/sshd_config /etc/ssh/authorized_keys/dev
 EXPOSE 22
 
 #Start ssh on entry
-RUN echo '/etc/init.d/ssh start' >> /entrypoint.sh
+RUN `
+  echo 'dpkg-reconfigure openssh-server' >> /entrypoint.sh `
+  && echo '/etc/init.d/ssh start' >> /entrypoint.sh
 
 ####### PAIRED PROGRAMING #######
 # add a user for paired programming (guest)
@@ -135,7 +132,7 @@ RUN `
   git clone --depth=1 git://github.com/zolrath/wemux.git /usr/local/share/wemux `
   && ln -s /usr/local/share/wemux/wemux /usr/local/bin/wemux `
   && cp /usr/local/share/wemux/wemux.conf.example /usr/local/etc/wemux.conf.example
-COPY ./wemux.conf /usr/local/etc/wemux.conf
+COPY ./config/wemux.conf /usr/local/etc/wemux.conf
 RUN chmod 0644 /usr/local/etc/wemux.conf
 
 ####### ETHEREUM DEV #######
@@ -164,11 +161,13 @@ RUN `
 
 #Configuare npm
 RUN `
-  npm config set user dev -g `
-  && npm config set prefix /home/dev/npm -g `
+  mkdir /npm `
+  && chown dev:dev /npm `
+  && npm config set user dev -g `
+  && npm config set prefix /npm -g `
   && echo '' >> /home/dev/.profile `
-  && echo 'if [ -d "$HOME/npm/bin" ] ; then' >> /home/dev/.profile `
-  && echo '    PATH="$HOME/npm/bin:$PATH"' >> /home/dev/.profile `
+  && echo 'if [ -d "/npm/bin" ] ; then' >> /home/dev/.profile `
+  && echo '    PATH="/npm/bin:$PATH"' >> /home/dev/.profile `
   && echo 'fi' >> /home/dev/.profile
 
 USER dev
@@ -191,28 +190,39 @@ USER root
 WORKDIR /tmp
 RUN `
   rm -rf /tmp/* `
-  && export SOLC_VERSION="$(/home/dev/npm/lib/node_modules/truffle/node_modules/solc/solcjs --version | sed 's/+.*//')" `
+  && export SOLC_VERSION="$(/npm/lib/node_modules/truffle/node_modules/solc/solcjs --version | sed 's/+.*//')" `
   && curl -LSso "./solidity_${SOLC_VERSION}.tar.gz" "https://github.com/ethereum/solidity/releases/download/v${SOLC_VERSION}/solidity_${SOLC_VERSION}.tar.gz" `
   && tar -zxf "./solidity_${SOLC_VERSION}.tar.gz" `
+  && rm ./solidity_${SOLC_VERSION}.tar.gz `
   && apt-get update `
   && apt-get install -y --no-install-recommends `
     cmake `
     libboost-all-dev `
   && rm -rf /var/lib/apt/lists/* `
-  && cmake ./solidity_${SOLC_VERSION} `
+  && chown -R dev:dev ./*
+
+RUN `
+  cmake ./solidity_* `
   && make `
-  && make install `
-  && apt-get purge -y `
+  && make install
+RUN `
+  apt-get purge -y `
       cmake `
   && apt-get autoremove -y `
   && rm -rf /tmp/*
 WORKDIR /
 
-####### JAVA #######
+####### JAVA / SCALA #######
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
+    dirmngr `
     openjdk-8-jdk `
+  && echo "deb https://dl.bintray.com/sbt/debian /" >> /etc/apt/sources.list.d/sbt.list `
+  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 `
+  && apt-get update `
+  && apt-get install -y --no-install-recommends `
+    sbt `
   && rm -rf /var/lib/apt/lists/*
 
 ####### STARTUP #######
