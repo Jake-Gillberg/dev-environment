@@ -177,10 +177,9 @@ RUN `
     npm@latest `
   && npm cache clean --force
 
-# Install testrpc and truffle
+# Install truffle
 RUN `
   npm install -g --no-optional `
-    git://github.com/ethereumjs/testrpc `
     git://github.com/trufflesuite/truffle `
   && npm cache clean --force
 USER root
@@ -224,6 +223,21 @@ RUN `
   && apt-get install -y --no-install-recommends `
     sbt `
   && rm -rf /var/lib/apt/lists/*
+  
+####### GUI ######
+RUN `
+  apt-get update `
+  && apt-get install -y --no-install-recommends `
+    x11-apps
+
+ENV DISPLAY :0
+####### INTELLIJ ######
+RUN `
+  apt-get update `
+  && apt-get install -y --no-install-recommends `
+    snapd `
+  && rm -rf /var/lib/apt/lists* `
+  && snap install intellij-idea-community --classic
 
 ####### STARTUP #######
 RUN `
