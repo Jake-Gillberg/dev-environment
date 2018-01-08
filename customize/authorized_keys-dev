@@ -1,2 +1,0 @@
-# Add ssh keys with normal dev access to the machine, example below
-#ssh-rsa <replace this (including brackets) with the public key> John
