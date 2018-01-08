@@ -4,8 +4,6 @@
 
 ####### VERSIONS #######
 FROM debian:stretch
-ARG DISTRO=stretch
-ARG NODE_VERSION=8.x
 
 LABEL maintainer "jake.gillberg@gmail.com"
 
@@ -97,121 +95,7 @@ RUN `
     && cat /home/dev/.vimrc.bak >> /home/dev/.vimrc
 USER root
 
-####### REMOTE ACCESS #######
-# Install an ssh server
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    openssh-server `
-  && rm -rf /var/lib/apt/lists/*
-
-#Configure sshd
-RUN `
-  rm -rf /etc/ssh/ssh_host* `
-  && cp /etc/ssh/sshd_config /etc/ssh/sshd_config.factorydefault
-COPY ./config/sshd_config /etc/ssh/sshd_config
-COPY ./customize/authorized_keys-dev /etc/ssh/authorized_keys/dev
-RUN chmod 0644 /etc/ssh/sshd_config /etc/ssh/authorized_keys/dev
-EXPOSE 22
-
-#Start ssh on entry
-RUN `
-  echo 'dpkg-reconfigure openssh-server' >> /entrypoint.sh `
-  && echo '/etc/init.d/ssh start' >> /entrypoint.sh
-
-####### PAIRED PROGRAMING #######
-# add a user for paired programming (guest)
-RUN `
-  adduser --gecos "" --shell /bin/bash --disabled-password guest
-
-COPY ./customize/authorized_keys-guest /etc/ssh/authorized_keys/guest
-RUN chmod 0644 /etc/ssh/authorized_keys/guest
-
-#Install and configure wemux
-RUN `
-  git clone --depth=1 git://github.com/zolrath/wemux.git /usr/local/share/wemux `
-  && ln -s /usr/local/share/wemux/wemux /usr/local/bin/wemux `
-  && cp /usr/local/share/wemux/wemux.conf.example /usr/local/etc/wemux.conf.example
-COPY ./config/wemux.conf /usr/local/etc/wemux.conf
-RUN chmod 0644 /usr/local/etc/wemux.conf
-
-####### ETHEREUM DEV #######
-#Install node and reqs for node packages
-#Use nodesource repository
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-	gnupg2 `
-  && rm -rf /var/lib/apt/lists/*
-RUN `
-  curl -sS https://deb.nodesource.com/gpgkey/nodesource.gpg.key `
-    | apt-key add - `
-  && echo "deb https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
-    > /etc/apt/sources.list.d/nodesource.list `
-  && echo "deb-src https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
-    >> /etc/apt/sources.list.d/nodesource.list
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    g++ `
-    nodejs `
-    make `
-    python `
-  && rm -rf /var/lib/apt/lists/*
-
-#Configuare npm
-RUN `
-  mkdir /npm `
-  && chown dev:dev /npm `
-  && npm config set user dev -g `
-  && npm config set prefix /npm -g `
-  && echo '' >> /home/dev/.profile `
-  && echo 'if [ -d "/npm/bin" ] ; then' >> /home/dev/.profile `
-  && echo '    PATH="/npm/bin:$PATH"' >> /home/dev/.profile `
-  && echo 'fi' >> /home/dev/.profile
-
-USER dev
-# Update npm before using it
-RUN `
-  npm install --no-optional -g `
-    npm@latest `
-  && npm cache clean --force
-
-# Install truffle
-RUN `
-  npm install -g --no-optional `
-    git://github.com/trufflesuite/truffle `
-  && npm cache clean --force
-USER root
-
-#Install the same solc that comes with truffle for syntax checking via syntastic.
-#  (solcjs command line options not compatible with solc)
-WORKDIR /tmp
-RUN `
-  rm -rf /tmp/* `
-  && export SOLC_VERSION="$(/npm/lib/node_modules/truffle/node_modules/solc/solcjs --version | sed 's/+.*//')" `
-  && curl -LSso "./solidity_${SOLC_VERSION}.tar.gz" "https://github.com/ethereum/solidity/releases/download/v${SOLC_VERSION}/solidity_${SOLC_VERSION}.tar.gz" `
-  && tar -zxf "./solidity_${SOLC_VERSION}.tar.gz" `
-  && rm ./solidity_${SOLC_VERSION}.tar.gz `
-  && apt-get update `
-  && apt-get install -y --no-install-recommends `
-    cmake `
-    libboost-all-dev `
-  && rm -rf /var/lib/apt/lists/* `
-  && chown -R dev:dev ./*
-
-RUN `
-  cmake ./solidity_* `
-  && make `
-  && make install
-RUN `
-  apt-get purge -y `
-      cmake `
-  && apt-get autoremove -y `
-  && rm -rf /tmp/*
-WORKDIR /
-
-####### JAVA / SCALA #######
+####### SCALA (and Java) #######
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
@@ -231,6 +115,7 @@ RUN `
     x11-apps
 
 ENV DISPLAY :0
+
 ####### INTELLIJ ######
 RUN `
   apt-get update `
