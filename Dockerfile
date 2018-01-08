@@ -115,6 +115,7 @@ RUN `
     x11-apps
 
 ENV DISPLAY :0
+ENV XAUTHORITY /tmp/.docker.xauth
 
 ####### INTELLIJ ######
 RUN `
