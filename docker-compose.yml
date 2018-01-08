@@ -2,18 +2,13 @@ version: '3'
 services:
     
     dev:
-        container_name: dev
+        container_name: livelygig-dev
         build: .
-        image: dev-image
+        image: livelygig-dev-image
         # Preserve dev home and ssh keys
         volumes:
-         - devhome:/home/dev
-         - authorized_keys:/etc/ssh/authorized_keys
+         - livelygig-dev-home:/home/dev
         tty: true
-        # Serve ssh on host port 64583
-        ports:
-         - "64583:22"
 
 volumes:
-    devhome:
-    authorized_keys:
+    livelygig-dev-home:
