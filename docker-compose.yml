@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 services:
     
     dev:
@@ -7,14 +7,17 @@ services:
         image: livelygig-dev-image
         # Preserve dev home and ssh keys
         volumes:
-         - livelygig-dev-home:/home/dev
-         - type: bind
-           source: /tmp/.X11-unix
-           target: /tmp/.X11-unix
-         - type: bind
-           source: /tmp/.docker.xauth
-           target: /tmp/.docker.xauth
+            - type: volume
+              source: livelygig-dev-home
+              target: /home/dev
+            - type: bind
+              source: /tmp/.X11-unix
+              target: /tmp/.X11-unix
+            - type: bind
+              source: /tmp/.docker.xauth
+              target: /tmp/.docker.xauth
         tty: true
+        network_mode: "host"
 
 volumes:
     livelygig-dev-home:

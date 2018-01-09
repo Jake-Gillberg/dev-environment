@@ -30,11 +30,12 @@ RUN `
     ca-certificates `
     curl `
     git `
-	gosu `
-	locales `
+    gnupg2 `
+    gosu `
+    locales `
     man `
     tmux `
-	unzip `
+    unzip `
   && rm -rf /var/lib/apt/lists/*
   
 #Set the locale
@@ -107,23 +108,27 @@ RUN `
   && apt-get install -y --no-install-recommends `
     sbt `
   && rm -rf /var/lib/apt/lists/*
+
+####### INTELLIJ #######
+WORKDIR /tmp
+RUN `
+  curl -LO https://download.jetbrains.com/idea/ideaIC-2017.3.2.tar.gz `
+  && tar xf ideaIC-2017.3.2.tar.gz -C /opt/ `
+  && rm -rf ideaIC-2017.3.2.tar.gz
+WORKDIR /
   
 ####### GUI ######
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
-    x11-apps
+    x11-apps `
+  && rm -rf /var/lib/apt/lists* 
 
-ENV DISPLAY :0
+ENV DISPLAY :0.0
 ENV XAUTHORITY /tmp/.docker.xauth
 
-####### INTELLIJ ######
 RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    snapd `
-  && rm -rf /var/lib/apt/lists* `
-  && snap install intellij-idea-community --classic
+  echo 'chmod 755 /tmp/.docker.xauth' >> /entrypoint.sh
 
 ####### STARTUP #######
 RUN `
