@@ -1,19 +1,28 @@
-version: '3'
+version: '3.4'
 services:
     
     dev:
-        container_name: dev
+        container_name: rchain-dev
+        image: rchain-dev-image
         build: .
-        image: dev-image
-        # Preserve dev home and ssh keys
         volumes:
-         - devhome:/home/dev
-         - authorized_keys:/etc/ssh/authorized_keys
+          # Preserve dev home
+            - type: volume
+              source: dev-home
+              target: /home/dev
+          # Bind to host docker to prevent containers in containers
+            - type: bind
+              source: /var/run/docker.sock
+              target: /var/run/docker.sock
+          # Bind to X session to start GUI apps
+            - type: bind
+              source: /tmp/.X11-unix
+              target: /tmp/.X11-unix
+            - type: bind
+              source: /tmp/.docker.xauth
+              target: /tmp/.docker.xauth
         tty: true
-        # Serve ssh on host port 64583
-        ports:
-         - "64583:22"
+        network_mode: "host"
 
 volumes:
-    devhome:
-    authorized_keys:
+    dev-home:
