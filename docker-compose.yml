@@ -2,13 +2,13 @@ version: '3.4'
 services:
     
     dev:
-        container_name: rchain-dev
-        image: rchain-dev-image
+        container_name: circles-dev
+        image: circles-dev-image
         build: .
         volumes:
           # Preserve dev home
             - type: volume
-              source: dev-home
+              source: circles-home
               target: /home/dev
           # Bind to host docker to prevent containers in containers
             - type: bind
@@ -25,4 +25,4 @@ services:
         network_mode: "host"
 
 volumes:
-    dev-home:
+    circles-home:

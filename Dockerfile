@@ -5,7 +5,6 @@
 ####### VERSIONS #######
 FROM debian:stretch
 ARG DISTRO=stretch
-ARG INTELLIJ_VERSION=2018.1.1
 
 LABEL maintainer "jake.gillberg@gmail.com"
 
@@ -94,87 +93,80 @@ RUN `
     && echo '' >> /home/dev/.vimrc `
     && cat /home/dev/.vimrc.bak >> /home/dev/.vimrc
 USER root
-
-####### Java #######
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    openjdk-8-jdk-headless `
-  && rm -rf /var/lib/apt/lists/*
-
-####### SBT #######
-RUN `
-  echo "deb https://dl.bintray.com/sbt/debian /" >> /etc/apt/sources.list.d/sbt.list `
-  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 `
-  && apt-get update `
-  && apt-get install -y --no-install-recommends `
-    sbt `
-  && rm -rf /var/lib/apt/lists/*
-
-####### BNFC #######
-WORKDIR /tmp
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    alex `
-    cabal-install `
-    happy `
-  && rm -rf /var/lib/apt/lists/* `
-  && git clone --depth=1 https://github.com/BNFC/bnfc.git
-WORKDIR /tmp/bnfc/source
-RUN `
-  cabal sandbox init --sandbox /bnfc `
-  && cabal update `
-  && cabal install
-RUN `
-  echo '' >> /home/dev/.profile `
-  && echo 'if [ -d "/bnfc/bin" ] ; then' >> /home/dev/.profile `
-  && echo '    PATH="/bnfc/bin:$PATH"' >> /home/dev/.profile `
-  && echo 'fi' >> /home/dev/.profile
-
-WORKDIR /
-
-####### JFLEX #######
-RUN `
-  apt-get update `
-  && apt-get install -y --no-install-recommends `
-    jflex `
-  && rm -rf /var/lib/apt/lists/*
-
-####### DOCKER #######
-# Note, the recommded way to run docker from inside a container is to
-#  bind-mount /var/run/docker.sock from the host system
-#  (http://jpetazzo.github.io/2015/09/03/do-not-use-docker-in-docker-for-ci/)
-RUN `
-  curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - `
-  && echo "deb [arch=amd64] https://download.docker.com/linux/debian ${DISTRO} stable" `
-    > /etc/apt/sources.list.d/docker.list `
-  && apt-get update `
-  && apt-get install -y --no-install-recommends `
-    docker-ce `
-  && rm -rf /var/lib/apt/lists/* `
-  && usermod -aG docker dev
-
-####### INTELLIJ #######
-WORKDIR /tmp
-RUN `
-  curl -LO https://download.jetbrains.com/idea/ideaIC-${INTELLIJ_VERSION}-no-jdk.tar.gz `
-  && tar xf ideaIC-${INTELLIJ_VERSION}-no-jdk.tar.gz -C /opt/ `
-  && rm -rf ideaIC-${INTELLIJ_VERSION}-no-jdk.tar.gz
-WORKDIR /
-  
+ 
 ####### GUI ######
 RUN `
   apt-get update `
   && apt-get install -y --no-install-recommends `
     x11-apps `
-  && rm -rf /var/lib/apt/lists* 
+  && rm -rf /var/lib/apt/lists/*
 
 ENV DISPLAY :0.0
 ENV XAUTHORITY /tmp/.docker.xauth
 
 RUN `
   echo 'chmod 755 /tmp/.docker.xauth' >> /entrypoint.sh
+
+####### DappHub toolkit #######
+RUN `
+  mkdir -m 0755 /nix `
+  && chown dev /nix
+
+USER dev
+ENV USER=dev
+RUN `
+  curl https://nixos.org/nix/install | sh
+
+RUN `
+  curl https://dapp.tools/install | sh
+
+USER root
+
+####### NODE #######
+ARG NODE_VERSION=8.x
+RUN `
+  curl -sS https://deb.nodesource.com/gpgkey/nodesource.gpg.key `
+    | apt-key add - `
+  && echo "deb https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
+    > /etc/apt/sources.list.d/nodesource.list `
+  && echo "deb-src https://deb.nodesource.com/node_${NODE_VERSION} ${DISTRO} main" `
+    >> /etc/apt/sources.list.d/nodesource.list
+RUN `
+  apt-get update `
+  && apt-get install -y --no-install-recommends `
+    g++ `
+    nodejs `
+    make `
+    python `
+  && rm -rf /var/lib/apt/lists/*
+
+#Configuare npm
+RUN `
+  mkdir /npm `
+  && chown dev:dev /npm `
+  && npm config set user dev -g `
+  && npm config set prefix /npm -g `
+  && echo '' >> /home/dev/.profile `
+  && echo 'if [ -d "/npm/bin" ] ; then' >> /home/dev/.profile `
+  && echo '    PATH="/npm/bin:$PATH"'   >> /home/dev/.profile `
+  && echo 'fi'                          >> /home/dev/.profile
+
+USER dev
+# Update npm before using it
+RUN `
+  npm install --no-optional -g `
+    npm@latest `
+  && npm cache clean --force
+USER root
+
+####### TRUFFLE #######
+USER dev
+RUN `
+  npm install -g --no-optional `
+    truffle `
+    ganache-cli `
+  && npm cache clean --force
+USER root
 
 ####### STARTUP #######
 RUN `
